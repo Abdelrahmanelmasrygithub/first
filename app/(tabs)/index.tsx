@@ -1,98 +1,150 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+// app/(tabs)/index.tsx
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import Navbar from '../../components/Navbar'; 
+import UserCard from '../../components/UserCard'; 
+
+import { fetchUserCards, getCurrentUserId } from '@/constants/api'; 
+
+
+interface UserCardData {
+  id: string;
+  name: string;
+  age: number;
+  imageUrl: string;
+  bio: string;
+  location: string;
+  interests: string[];
+  likeCount: number;
+  isUserLiked: boolean;
+  isVerified?: boolean; // خليه اختياري بدل مطلوب
+}
+const POLLING_INTERVAL = 30000; 
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const [users, setUsers] = useState<UserCardData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false); // حالة جديدة للـ refresh يدوي
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const loadUserCards = async (isInitialLoad: boolean = false) => {
+    if (isInitialLoad) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
+    
+    try {
+      const data = await fetchUserCards(); 
+      if (data && data.length > 0) { // تحقق إضافي لو الداتا فارغة
+        setUsers(data);
+        setError(null);
+      } else {
+        setError("فشل في تحميل المستخدمين. تحقق من اتصال الشبكة أو سياسات RLS في Supabase.");
+      }
+    } catch (err) {
+      console.error("Error fetching user cards:", err); // طبع الإيرور بالتفصيل (مهم للـ debug)
+      setError("حدث خطأ غير متوقع أثناء جلب البيانات.");
+    } finally {
+      if (isInitialLoad) {
+        setLoading(false);
+      } else {
+        setRefreshing(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      const userId = await getCurrentUserId();
+      setCurrentUserId(userId); 
+      loadUserCards(true);
+    };
+    
+    loadInitialData();
+
+    const intervalId = setInterval(() => {
+      loadUserCards(false); 
+      console.log('Polling triggered: User cards refreshed.');
+    }, POLLING_INTERVAL);
+
+    return () => clearInterval(intervalId); 
+  }, []);
+
+  // دالة الـ refresh يدوي (مستخدمة useCallback عشان الأداء)
+  const onRefresh = useCallback(() => {
+    loadUserCards(false);
+  }, []);
+
+  const renderItem = ({ item }: { item: UserCardData }) => (
+    <UserCard user={item} currentUserId={currentUserId} /> 
+  );
+
+  return (
+    <View style={styles.container}> 
+      <Navbar /> 
+      
+      <View style={styles.content}>
+        {loading && (
+          <ActivityIndicator size="large" color="#66b2ff" style={{ marginTop: 50 }} />
+        )}
+
+        {error && users.length === 0 && ( 
+          <Text style={styles.errorText}>{error}</Text>
+        )}
+
+        {!loading && (
+          <>
+            <Text style={styles.header}>اكتشف</Text> 
+            <FlatList
+              data={users}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id}
+              numColumns={2}
+              contentContainerStyle={styles.list}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={['#66b2ff']} // لون الـ spinner
+                />
+              }
+            />
+          </>
+        )}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  content: {
+    flex: 1, 
+    paddingTop: 10,
+    paddingHorizontal: 5, // إضافة padding جانبي للـ content
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'right', 
+    paddingHorizontal: 10,
+    marginBottom: 10,
   },
+  list: {
+    paddingBottom: 20, 
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 50,
+    fontSize: 16,
+    paddingHorizontal: 20, // لجعلها أوسع
+  }
 });
