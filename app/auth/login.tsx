@@ -1,3 +1,4 @@
+// app/auth/login.tsx
 import { Link, useRouter } from 'expo-router'; // استيراد useRouter لتوجيه المستخدمين
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -17,11 +18,14 @@ export default function LoginScreen() {
       return;
     }
 
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
     setLoading(true);
     
     const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
+      email: trimmedEmail,
+      password: trimmedPassword,
     });
 
     if (error) {
@@ -76,6 +80,10 @@ export default function LoginScreen() {
 
       <Link href="/auth/register" style={styles.linkText}>
         Create Account
+      </Link>
+
+      <Link href="/auth/reset-password" style={styles.linkText}>
+        Forgot Password?
       </Link>
     </View>
   );

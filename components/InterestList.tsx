@@ -1,92 +1,181 @@
-// app/(tabs)/InterestList.tsx (كومبوننت منفصل لقائمة الاهتمامات)
+// app/(tabs)/InterestList.tsx
 import React from 'react';
-import { View, Text, TextInput, Button, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 
 interface InterestListProps {
   interests: string[];
   newInterest: string;
   setNewInterest: (value: string) => void;
-  addInterest: () => void;
+  addInterest: (interest?: string) => void;
   removeInterest: (index: number) => void;
 }
 
-export default function InterestList({ interests, newInterest, setNewInterest, addInterest, removeInterest }: InterestListProps) {
+const SUGGESTED_INTERESTS = [
+  'البرمجة',
+  'التصميم',
+  'الذكاء الاصطناعي',
+  'الرياضة',
+  'القراءة',
+  'السفر',
+  'التصوير',
+  'الألعاب',
+];
+
+export default function InterestList({
+  interests,
+  newInterest,
+  setNewInterest,
+  addInterest,
+  removeInterest,
+}: InterestListProps) {
   return (
     <>
       <Text style={styles.label}>اهتماماتك</Text>
+
+      {/* الاهتمامات الحالية */}
       <View style={styles.interestsList}>
         {interests.map((item, index) => (
           <View key={index} style={styles.interestTag}>
             <Text style={styles.interestText}>{item}</Text>
             <TouchableOpacity onPress={() => removeInterest(index)}>
-              <Text style={styles.remove}>×</Text>
+              <Text style={styles.remove}>✕</Text>
             </TouchableOpacity>
           </View>
         ))}
       </View>
+
+      {/* إدخال اهتمام جديد */}
       <View style={styles.addInterest}>
         <TextInput
-          style={[styles.input, { flex: 1 }]}
+          style={styles.input}
           value={newInterest}
           onChangeText={setNewInterest}
           placeholder="أضف اهتمام جديد"
+          placeholderTextColor="#999"
         />
-        <Button title="إضافة" onPress={addInterest} color="#0066cc" />
+
+        <TouchableOpacity style={styles.addButton} onPress={() => addInterest()}>
+          <Text style={styles.addButtonText}>إضافة</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* اقتراحات */}
+      <Text style={styles.suggestionLabel}>اقتراحات</Text>
+      <View style={styles.suggestions}>
+        {SUGGESTED_INTERESTS.map((item) => (
+          <TouchableOpacity
+            key={item}
+            style={styles.suggestionChip}
+            onPress={() => addInterest(item)}
+          >
+            <Text style={styles.suggestionText}>+ {item}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
     </>
   );
 }
-
 const styles = StyleSheet.create({
-  label: { 
-    fontSize: 17, 
-    fontWeight: '600', 
-    marginTop: 20, 
-    marginBottom: 8, 
-    color: '#333',
-    textAlign: 'right'
+  label: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 20,
+    marginBottom: 10,
+    color: '#222',
+    textAlign: 'right',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    padding: 14,
-    backgroundColor: '#fff',
-    fontSize: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-    textAlign: 'right'
-  },
+
   interestsList: {
-    flexDirection: 'row-reverse', // لدعم RTL
+    flexDirection: 'row-reverse',
     flexWrap: 'wrap',
     gap: 10,
-    marginVertical: 10,
   },
+
   interestTag: {
-    flexDirection: 'row-reverse', // لدعم RTL
-    backgroundColor: '#e3f2fd',
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 25,
+    flexDirection: 'row-reverse',
     alignItems: 'center',
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+
+  interestText: {
+    color: '#4338CA',
+    fontWeight: '600',
+  },
+
+  remove: {
+    color: '#EF4444',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+
+  addInterest: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 15,
+  },
+
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    padding: 14,
+    backgroundColor: '#FFF',
+    fontSize: 16,
+    textAlign: 'right',
+  },
+
+  addButton: {
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 14,
+    shadowColor: '#4F46E5',
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  addButtonText: {
+    color: '#FFF',
+    fontWeight: '700',
+  },
+
+  suggestionLabel: {
+    marginTop: 20,
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'right',
+    color: '#444',
+  },
+
+  suggestions: {
+    flexDirection: 'row-reverse',
+    flexWrap: 'wrap',
     gap: 8,
   },
-  interestText: { 
-    color: '#0066cc', 
-    fontWeight: '600' 
+
+  suggestionChip: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
   },
-  remove: { 
-    color: 'red', 
-    fontSize: 20, 
-    fontWeight: 'bold' 
+
+  suggestionText: {
+    color: '#374151',
+    fontWeight: '500',
   },
-  addInterest: { 
-    flexDirection: 'row-reverse', // لدعم RTL
-    alignItems: 'center', 
-    gap: 12, 
-    marginTop: 10 
-  },
-});
+}); 

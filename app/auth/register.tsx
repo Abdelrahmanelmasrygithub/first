@@ -1,9 +1,8 @@
+// app/auth/register.tsx
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { supabase } from '@/constants/supabase'; 
-
-// ملاحظة: لإضافة تدرج لوني حقيقي (Gradient)، ستحتاج إلى مكتبة مثل expo-linear-gradient واستخدامها بدلاً من View الخارجي.
+import { supabase } from '@/constants/supabase';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -15,48 +14,34 @@ export default function RegisterScreen() {
 
   const handleSignUp = async () => {
     if (!name || !email || !password) {
-      Alert.alert('خطأ', 'الرجاء ملء جميع الحقول (الاسم، البريد الإلكتروني، وكلمة المرور).');
+      Alert.alert('خطأ', 'الرجاء ملء جميع الحقول.');
       return;
     }
 
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
     setLoading(true);
-    
-    const { data, error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
+
+    // استخدم signInWithOtp لإرسال OTP (يعمل signup إذا جديد)
+    const { error } = await supabase.auth.signInWithOtp({
+      email: trimmedEmail,
       options: {
-        data: {
-          full_name: name,
-        },
-      },
+        data: { full_name: name }, // metadata
+        shouldCreateUser: true // إنشاء مستخدم إذا غير موجود
+      }
     });
 
-    // مسح الحقول بعد محاولة التسجيل
-    setName('');
-    setEmail('');
-    setPassword('');
+    setLoading(false);
 
     if (error) {
-      Alert.alert('خطأ في التسجيل', error.message);
-    } else if (data.user) {
-      if (data.session === null) {
-        Alert.alert(
-          'تأكيد البريد الإلكتروني',
-          'تم إنشاء الحساب بنجاح. يرجى مراجعة بريدك الإلكتروني لتأكيد التسجيل قبل محاولة تسجيل الدخول.'
-        );
-        router.replace('/auth/login'); 
-      } else {
-        Alert.alert('تم بنجاح', 'تم تسجيل حسابك وتسجيل دخولك بنجاح.');
-        router.replace('/'); 
-      }
+      Alert.alert('خطأ', error.message);
     } else {
-      Alert.alert('رسالة', 'تم إرسال طلب التسجيل. يرجى التحقق من بريدك الإلكتروني.');
-      router.replace('/auth/login');
+      Alert.alert('تم', 'تم إرسال كود التأكيد إلى بريدك. أدخله لإكمال التسجيل.');
+      router.push({ pathname: '/auth/verify-otp', params: { email: trimmedEmail, type: 'signup', password: trimmedPassword } }); // اذهب إلى شاشة OTP مع params
     }
-
-    setLoading(false);
   };
-  
+
   // ----------------------------------------------------
 
   return (

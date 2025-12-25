@@ -1,15 +1,12 @@
 // app/(tabs)/_layout.tsx - الملف الذي تم تعديله
-
 import { Redirect, Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
 // استيراد عميل Supabase من المسار الذي تم تصحيحه
-import { supabase } from '../../constants/supabase'; 
+import { supabase } from '@/constants/supabase'; // تأكد من أن هذا المسار صحيح بناءً على هيكل المجلدات (ربما '../../constants/supabase' غير صحيح الآن)
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -22,14 +19,12 @@ export default function TabLayout() {
       setSession(session);
       setLoading(false);
     });
-
     // 2. الاشتراك في تغييرات حالة المصادقة (لتحديث حالة التطبيق فوراً عند تسجيل الدخول/الخروج)
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
       }
     );
-
     // 3. مسح (Cleanup)
     return () => {
       authListener?.subscription.unsubscribe();
@@ -38,7 +33,7 @@ export default function TabLayout() {
 
   // 4. عرض شاشة تحميل أثناء التحقق من حالة المستخدم
   if (loading) {
-    return <></>; 
+    return <></>;
   }
 
   // 5. منطق التوجيه: إذا لم يكن هناك جلسة، قم بالتوجيه إلى شاشة تسجيل الدخول
@@ -62,17 +57,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-         name="my-profile" // اسم المجلد
-         options={{
-         title: 'البروفايل',
-         tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle.fill" color={color} />,
-  }}
-/>
+        name="my-profile" // اسم المجلد
+        options={{
+          title: 'البروفايل',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.crop.circle.fill" color={color} />,
+        }}
+      />
       <Tabs.Screen
-          name="exploree"
-          options={{
-          title: 'Exploree',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+        name="messages" // الاسم الجديد بعد نقل المجلد إلى app/(tabs)/messages/index.tsx
+        options={{
+          href: null, // إذا كنت تريد تعطيل التب مؤقتاً حتى النقل
+          title: 'الرسائل',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />, // إذا لم يعمل، جرب "chatbubble.fill" أو تحقق من مكتبة الأيقونات
         }}
       />
     </Tabs>

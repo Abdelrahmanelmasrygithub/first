@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import 'react-native-url-polyfill/auto'; 
+import 'react-native-url-polyfill/auto';
 
 // 1. رابط المشروع الذي أكدته
 const supabaseUrl = 'https://jjasblslqtcljarkkczg.supabase.co'; 
@@ -14,3 +14,4 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true, 
   },
 });
+supabase.auth.getSession().then(res => console.log(res));

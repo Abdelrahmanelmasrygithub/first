@@ -12,9 +12,9 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { fetchMyProfile, updateProfile } from '@/constants/api';
-import useImagePicker from '../../../hooks/useImagePicker'; // ظبط المسار لو hooks في (tabs)/hooks
-import styles from '../../../hooks/styles'; // ظبط المسار، أو غيره لـ './styles' لو محلي
-import InterestList from '../../../components/InterestList'; // ظبط المسار لو components في (tabs)/components
+import useImagePicker from '../../../hooks/useImagePicker';
+import styles from '../../../hooks/styles';
+import InterestList from '../../../components/InterestList';
 
 export default function ProfileEditScreen() {
   const navigation = useNavigation();
@@ -33,7 +33,7 @@ export default function ProfileEditScreen() {
     if (!I18nManager.isRTL) {
       I18nManager.allowRTL(true);
       I18nManager.forceRTL(true);
-      Alert.alert('إعادة تشغيل مطلوبة', 'أعد تشغيل التطبيق لتفعيل الدعم العربي (RTL).');
+      Alert.alert('إعادة تشغيل مطلوبة', 'أعد تشغيل التطبيق لتفعيل الدعم العربي');
     }
 
     const loadProfile = async () => {
@@ -48,18 +48,27 @@ export default function ProfileEditScreen() {
         setAvatarPreview(data.avatar_url || null);
       }
     };
+
     loadProfile();
   }, []);
 
-  const addInterest = () => {
-    if (newInterest.trim()) {
-      setInterests([...interests, newInterest.trim()]);
-      setNewInterest('');
+  /* ✅ التعديل المهم هنا */
+  const addInterest = (interest?: string) => {
+    const value = (interest ?? newInterest).trim();
+
+    if (!value) return;
+
+    if (interests.includes(value)) {
+      Alert.alert('تنبيه', 'هذا الاهتمام مضاف مسبقًا');
+      return;
     }
+
+    setInterests((prev) => [...prev, value]);
+    setNewInterest('');
   };
 
   const removeInterest = (index: number) => {
-    setInterests(interests.filter((_, i) => i !== index));
+    setInterests((prev) => prev.filter((_, i) => i !== index));
   };
 
   const pickImage = useImagePicker(setAvatarFile, setAvatarPreview);
@@ -84,16 +93,12 @@ export default function ProfileEditScreen() {
     }
 
     const result = await updateProfile(updates);
+
     if (result.success) {
-      Alert.alert('تم بنجاح', 'تم تحديث البروفايل بنجاح');
-      const freshData = await fetchMyProfile();
-      if (freshData) {
-        setProfile(freshData);
-        setAvatarPreview(freshData.avatar_url);
-      }
-      navigation.goBack(); // رجوع للـ index بعد الحفظ
+      Alert.alert('تم بنجاح', 'تم تحديث البروفايل');
+      navigation.goBack();
     } else {
-      Alert.alert('فشل', result.message || 'حدث خطأ أثناء الحفظ');
+      Alert.alert('فشل', result.message || 'حدث خطأ');
     }
   };
 
@@ -106,40 +111,45 @@ export default function ProfileEditScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 30 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       <Text style={styles.header}>تعديل البروفايل</Text>
+
       <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
         {avatarPreview ? (
           <Image source={{ uri: avatarPreview }} style={styles.avatar} />
         ) : (
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>اضغط لإضافة صورة</Text>
+            <Text style={styles.avatarText}>إضافة صورة</Text>
           </View>
         )}
         <View style={styles.editIcon}>
-          <Text style={{ color: '#fff', fontSize: 20 }}>+</Text>
+          <Text style={{ color: '#fff', fontSize: 22 }}>+</Text>
         </View>
       </TouchableOpacity>
+
       <Text style={styles.label}>اسم المستخدم</Text>
-      <TextInput style={styles.input} value={username} onChangeText={setUsername} placeholder="أدخل اسمك" />
+      <TextInput style={styles.input} value={username} onChangeText={setUsername} />
+
       <Text style={styles.label}>العمر</Text>
       <TextInput
         style={styles.input}
         value={age}
         onChangeText={setAge}
         keyboardType="numeric"
-        placeholder="مثال: 28"
       />
+
       <Text style={styles.label}>السيرة الذاتية</Text>
       <TextInput
-        style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+        style={[styles.input, styles.textArea]}
         value={bio}
         onChangeText={setBio}
         multiline
-        placeholder="حكي عن نفسك..."
       />
+
       <Text style={styles.label}>المكان</Text>
-      <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="مثال: القاهرة" />
+      <TextInput style={styles.input} value={location} onChangeText={setLocation} />
+
+      {/* ✅ InterestList يعمل الآن مع الاقتراحات */}
       <InterestList
         interests={interests}
         newInterest={newInterest}
@@ -147,8 +157,10 @@ export default function ProfileEditScreen() {
         addInterest={addInterest}
         removeInterest={removeInterest}
       />
-      <Button title="حفظ التغييرات" onPress={handleUpdate} color="#0066cc" />
-      <View style={{ height: 50 }} />
+
+      <TouchableOpacity style={styles.saveButton} onPress={handleUpdate}>
+        <Text style={styles.saveButtonText}>حفظ التغييرات</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }

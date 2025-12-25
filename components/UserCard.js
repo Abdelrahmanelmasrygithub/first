@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router'; 
 // 🟢 غيرت الـ path لـ utils/api (غيره حسب هيكل المجلدات عندك)
 import { sendLike, removeLike, sendFriendRequest } from '@/constants/api'; // ← هنا التغيير الرئيسي
+import { supabase } from '@/constants/supabase'; // أضف هذا لو مش موجود، عشان التحقق من الصداقة والحظر
 
 const screenWidth = Dimensions.get('window').width;
 const cardWidth = (screenWidth / 2) - 15; 
@@ -94,31 +95,10 @@ const UserCard = ({ user, currentUserId }) => {
                 </Text>
             </View>
 
-            <View style={styles.infoContainer}>
-                <View style={styles.actionButtons}>
-                    <TouchableOpacity 
-                        style={styles.chatButton}
-                        onPress={() => {
-                            if (!currentUserId) {
-                                Alert.alert("خطأ", "يجب تسجيل الدخول للبدء في المحادثة.");
-                                return;
-                            }
-                            router.push(`/chat/${user.id}`);
-                        }}>
-                        <Ionicons name="chatbubble-ellipses-outline" size={20} color="#fff" />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                        style={styles.addButton}
-                        onPress={handleAddFriend}>
-                        <Ionicons name="person-add-outline" size={20} color="#fff" />
-                    </TouchableOpacity>
-                </View>
-                
+            <View style={styles.infoContainer}>                
                 <Text style={styles.userInfo}>
-                    {user.age} . {user.name} - {user.location}
+                    {user.name} {user.age}
                 </Text>
-                <Text style={styles.interests}>{user.interests.join(', ')}</Text>
             </View>
             
         </TouchableOpacity>
@@ -128,14 +108,14 @@ const UserCard = ({ user, currentUserId }) => {
 const styles = StyleSheet.create({
     cardContainer: {
         margin: 5,
-        borderRadius: 8,
+        borderRadius: 16, // زيادة borderRadius للحواف الأكثر نعومة
         overflow: 'hidden',
         backgroundColor: '#fff',
-        elevation: 3, 
+        elevation: 2, // شادو خفيف لتجربة مستخدم أفضل
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
         minHeight: 250,
     },
     image: {
@@ -175,23 +155,30 @@ const styles = StyleSheet.create({
     },
     infoContainer: {
         position: 'absolute',
-        bottom: 0,
-        width: '100%',
+        bottom: -4, // جعلها تنزل قليلاً تحت الكارت (حوالي 5% بناءً على ارتفاع افتراضي حوالي 40-50)
+        width: '90%', // عرض أقصر من الكارت
+        alignSelf: 'center', // توسيطها
         padding: 8,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        backgroundColor: '#fff',
+        borderRadius: 8, // إضافة حواف مستديرة
         flexDirection: 'row-reverse', 
         justifyContent: 'space-between',
         alignItems: 'center',
+        elevation: 1, // شادو خفيف للشريط
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
     },
     userInfo: {
-        color: '#fff',
+        color: '#000', // تغيير لون النص إلى أسود
         fontSize: 16,
         fontWeight: 'bold',
         textAlign: 'right',
         flexShrink: 1, 
     },
     interests: {
-        color: '#fff',
+        color: '#000', // تغيير لون النص إلى أسود
         fontSize: 12,
         textAlign: 'right',
         marginTop: 4,
